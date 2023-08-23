@@ -148,19 +148,23 @@ def scrape_and_create_cards(url, deck):
         deck.add_note(note)
 
 
-# Main script execution
-deck = genanki.Deck(deck_id=1076326919, name="Mnemonic Dictionary Deck")
+def main():
+    deck = genanki.Deck(deck_id=1076326919, name="Mnemonic Dictionary Deck")
 
-url = lambda x: f"https://mnemonicdictionary.com/wordlist/GREwordlist?page={x}"
-for i in range(1, 473):
-    scrape_and_create_cards(url(i), deck)
+    url = lambda x: f"https://mnemonicdictionary.com/wordlist/GREwordlist?page={x}"
+    for i in range(1, 473):
+        scrape_and_create_cards(url(i), deck)
 
-# Package everything into an Anki deck file
-media_files = [
-    f for f in os.listdir() if f.endswith(".mp3")
-]  # Collect all the mp3 files
-package = genanki.Package(deck)
-package.media_files = media_files
-package.write_to_file("mnemonic_deck.apkg")
+    # Package everything into an Anki deck file
+    media_files = [
+        f for f in os.listdir() if f.endswith(".mp3")
+    ]  # Collect all the mp3 files
+    package = genanki.Package(deck)
+    package.media_files = media_files
+    package.write_to_file("mnemonic_deck.apkg")
 
-print("Deck has been created!")
+    print("Deck has been created!")
+
+
+if __name__ == "__main__":
+    main()
