@@ -9,6 +9,9 @@ from bs4 import BeautifulSoup
 
 # import webbrowser
 
+# words to filter out of mnemonic hints (i don't speak hindi)
+filter_words = ["hindi"]
+
 
 # Generate audio function
 def generate_audio(word, filename):
@@ -72,11 +75,16 @@ def scrape_and_create_cards(url, deck):
             explanation += "</div>"
         explanation += "</div>"
 
-        hints = "<ul>"
-
-        for card_text_div in div.find_all("div", class_="card-text")[:5]:
+        hint_texts = []
+        for card_text_div in div.find_all("div", class_="card-text"):
             p = card_text_div.find_all("p")[-1]
-            hints += f'<li class="hint">{html.escape(p.text.strip())}</li>'
+            p_text = p.text.strip()
+            if not any([word in p_text.lower() for word in filter_words]):
+                hint_texts.append(html.escape(p_text))
+
+        hints = "<ul>"
+        for hint_text in hint_texts[:5]:
+            hints += f'<li class="hint">{hint_text}</li>'
         hints += "</ul>"
 
         audio_filename = generate_audio(word, f"{word}.mp3")
