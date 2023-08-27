@@ -1,23 +1,20 @@
 import genanki
 
-mnemonic_model = genanki.Model(
-    model_id=1113546032,
+google_dictionary_and_mnemonic_model = genanki.Model(
+    model_id=2020180200,
     name="Mnemonic Dictionary Model with Audio",
     fields=[
         {"name": "Word"},
-        {"name": "Short Definition"},
         {"name": "Explanation"},
         {"name": "Mnemonic Hints"},
         {"name": "Audio"},
     ],
     templates=[
         {
-            "name": "Card 1",
+            "name": "Card",
             "qfmt": "{{Audio}} &nbsp; {{Word}}",
             "afmt": """
                     <center><h2>{{Word}}</h2></center>
-                    <b>Short Definition:</b> {{Short Definition}}<br>
-                    <hr>
                     {{Explanation}}
                     <hr>
                     <b>Mnemonic Hints:</b><br>
