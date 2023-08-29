@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 
 # words to filter out of mnemonic hints (i don't speak hindi)
 FILTER_WORDS = ["hindi"]
+total_words = 0
 
 
 # Generate audio function
@@ -46,6 +47,7 @@ def get_hints_from_div(div: BeautifulSoup) -> str:
     for hint_text in hint_texts[:5]:
         hints += f'<li class="hint">{hint_text}</li>'
     hints += "</ul>"
+    return hints
 
 
 def get_google_dict_from_word(word: str) -> dict:
@@ -67,30 +69,48 @@ def parse_google_dict(google_dict: dict) -> str:
     explanation = '<div class="explanation">'
     if origin := google_dict.get("origin"):
         explanation += "<div>"
-        explanation += "<b>Origin &nbsp;</b>" + origin + "<br>"
+        explanation += "<b>Origin &nbsp;</b>" + html.escape(origin) + "<br>"
         explanation += "</div>"
     for meaning in google_dict["meanings"]:
         for definition in meaning["definitions"]:
             explanation += "<div>"
             explanation += (
                 "<b>Definition &nbsp;</b>("
-                + meaning["partOfSpeech"]
-                + ") "
-                + definition["definition"]
-                + "<br>"
+                f'{html.escape(meaning["partOfSpeech"])}'
+                ") "
+                f'{html.escape(definition["definition"])}'
+                "<br>"
             )  # *Definition* (verb) ...
             if "example" in definition:
-                explanation += "<b>Example &nbsp;</b>" + definition["example"] + "<br>"
+                explanation += (
+                    '<div class="spaced"><b>Example &nbsp;</b><span class="example">'
+                    f'{str(html.escape(definition["example"]))}'
+                    "</span></div>"
+                )
             if "synonyms" in definition and definition.get("synonyms"):
-                explanation += "<b>Synonyms &nbsp;</b>"
+                explanation += '<div class="spaced"><b>Synonyms &nbsp;</b>'
                 for syn in definition["synonyms"]:
-                    explanation += f'<span class="syn">{syn}</span>, '
-                explanation = explanation[:-2] + "<br>"  # remove the last comma
+                    explanation += f'<span class="syn">{html.escape(syn)}</span>, '
+                explanation = explanation[:-2] + "</div>"  # remove the last comma
             if "antonyms" in definition and definition.get("antonyms"):
                 explanation += "<b>Antonyms &nbsp;</b>"
                 for ant in definition["antonyms"]:
-                    explanation += f'<span class="syn">{ant}</span>, '
+                    explanation += f'<span class="syn">{html.escape(ant)}</span>, '
                 explanation = explanation[:-2] + "<br>"  # remove the last comma
+            explanation += "</div>"
+
+        if meaning.get("synonyms") or meaning.get("antonyms"):
+            explanation += "<div>"
+            if meaning.get("synonyms"):
+                explanation += "<b>Synonyms &nbsp;</b>"
+                for syn in meaning["synonyms"]:
+                    explanation += f'<span class="syn">{html.escape(syn)}</span>, '
+                explanation = explanation[:-2] + "<br>"
+            if meaning.get("antonyms"):
+                explanation += "<b>Antonyms &nbsp;</b>"
+                for ant in meaning["antonyms"]:
+                    explanation += f'<span class="syn">{html.escape(ant)}</span>, '
+                explanation = explanation[:-2] + "<br>"
             explanation += "</div>"
     explanation += "</div>"
     return explanation
@@ -137,6 +157,7 @@ def get_explanation_from_div(div: BeautifulSoup) -> str:
 # Function to scrape a page and create Anki cards
 def scrape_and_create_cards(url: str, deck: genanki.Deck) -> None:
     """Scrapes a page and creates Anki cards."""
+    global total_words
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "lxml")
     # content = response.text
@@ -167,6 +188,7 @@ def scrape_and_create_cards(url: str, deck: genanki.Deck) -> None:
             ],
         )
         deck.add_note(note)
+        total_words += 1
 
 
 def main() -> None:
@@ -174,6 +196,8 @@ def main() -> None:
 
     url = lambda x: f"https://mnemonicdictionary.com/wordlist/GREwordlist?page={x}"
     for i in range(1, 473):
+        if i % 10 == 0:
+            print(f"Scraping page {i}...")
         scrape_and_create_cards(url(i), deck)
 
     # Package everything into an Anki deck file
@@ -182,9 +206,9 @@ def main() -> None:
     ]  # Collect all the mp3 files
     package = genanki.Package(deck)
     package.media_files = media_files
-    package.write_to_file("mnemonic_deck.apkg")
+    package.write_to_file("google_mnemonic_deck.apkg")
 
-    print("Deck has been created!")
+    print(f"Deck has been created with {total_words} cards!")
 
 
 if __name__ == "__main__":

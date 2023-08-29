@@ -41,8 +41,10 @@ google_dictionary_and_mnemonic_model = genanki.Model(
             margin-bottom: 20px;
         }
         ul { margin: 0; }
+        hr { margin: 25px 0; }
         .explanation > div { margin-bottom: 20px; }
         .explanation > div:last-child { margin-bottom: 0; }
+        .spaced { margin-top: 5px; }
         .syn {
             display: inline;
             color: dodgerblue;
