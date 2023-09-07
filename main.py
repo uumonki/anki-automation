@@ -15,23 +15,24 @@ total_words = 0
 
 
 # Generate audio function
-def generate_audio(word: str, filename: str) -> str:
+def generate_audio(word: str, filename: str) -> (str, str):
     """Calls gTTS to generate an audio file for a word and saves it to filname.
     Returns the filename.
     """
     # first check if the file already exists
-    if os.path.exists(filename):
-        return filename
+    target_path = os.path.join("audio", filename)
+    if os.path.exists(target_path):
+        return target_path, filename
     tts = gTTS(text=word, lang="en")
     while True:
         try:
-            tts.save(filename)
+            tts.save(target_path)
             break
         except Exception:
             # too many requests, wait for 10 seconds and try again
             print("Too many requests, waiting for 10 seconds...")
             time.sleep(10)
-    return filename
+    return target_path, filename
 
 
 def get_hints_from_div(div: BeautifulSoup) -> str:
@@ -160,6 +161,7 @@ def scrape_and_create_cards(url: str, deck: genanki.Deck) -> None:
     global total_words
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "lxml")
+    media_files = []
     # content = response.text
     # with open("temp.html", "w", encoding="utf-8") as f:
     #     f.write(content)
@@ -176,7 +178,8 @@ def scrape_and_create_cards(url: str, deck: genanki.Deck) -> None:
         except requests.exceptions.HTTPError:
             explanation = get_explanation_from_div(div)
         hints = get_hints_from_div(div)
-        audio_filename = generate_audio(word, f"{word}.mp3")
+        audio_path, audio_filename = generate_audio(word, f"{word}.mp3")
+        media_files.append(audio_path)
 
         note = genanki.Note(
             model=google_dictionary_and_mnemonic_model,
@@ -190,20 +193,19 @@ def scrape_and_create_cards(url: str, deck: genanki.Deck) -> None:
         deck.add_note(note)
         total_words += 1
 
+    return media_files
+
 
 def main() -> None:
     deck = genanki.Deck(deck_id=1908808863, name="Mnemonic and Google Dictionary Deck")
 
     url = lambda x: f"https://mnemonicdictionary.com/wordlist/GREwordlist?page={x}"
+    media_files = []
     for i in range(1, 473):
         if i % 10 == 0:
             print(f"Scraping page {i}...")
-        scrape_and_create_cards(url(i), deck)
+        media_files.extend(scrape_and_create_cards(url(i), deck))
 
-    # Package everything into an Anki deck file
-    media_files = [
-        f for f in os.listdir() if f.endswith(".mp3")
-    ]  # Collect all the mp3 files
     package = genanki.Package(deck)
     package.media_files = media_files
     package.write_to_file("google_mnemonic_deck.apkg")
